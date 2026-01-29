@@ -1,0 +1,8 @@
+requests
+google-generativeai
+openai
+jinja2
+python-dotenv
+pyyaml
+beautifulsoup4
+pytest
