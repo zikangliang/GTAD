@@ -46,14 +46,30 @@ class Notifier:
         part = MIMEText(html_content, "html")
         msg.attach(part)
 
+        # Try sending with auto-fallback logic (SSL -> STARTTLS)
         try:
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+            # First attempt: SSL (usually port 465)
+            # We override port to 465 for SSL attempt specifically if default is generic
+            try:
+                # Prefer explicit 465 for SSL, but respect env var if user set something else specific
+                ssl_port = 465 if self.smtp_port == 587 else self.smtp_port
+                with smtplib.SMTP_SSL(self.smtp_server, ssl_port, timeout=10) as server:
+                    server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.sender_email, self.receiver_emails, msg.as_string())
+                print(f"Email sent successfully (via SSL) to {len(self.receiver_emails)} recipients.")
+                return 
+            except Exception as ssl_error:
+                print(f"SSL connection failed ({ssl_error}), retrying with STARTTLS...")
+
+            # Second attempt: STARTTLS (usually port 587)
+            with smtplib.SMTP(self.smtp_server, 587, timeout=10) as server:
                 server.starttls()
                 server.login(self.smtp_user, self.smtp_password)
                 server.sendmail(self.sender_email, self.receiver_emails, msg.as_string())
-            print(f"Email sent successfully to {len(self.receiver_emails)} recipients.")
+            print(f"Email sent successfully (via STARTTLS) to {len(self.receiver_emails)} recipients.")
+
         except Exception as e:
-            print(f"Error sending email: {e}")
+            print(f"All email sending attempts failed. Last error: {e}")
             print("Attempting to save report locally due to email failure...")
             try:
                 with open("latest_report.html", "w", encoding="utf-8") as f:
