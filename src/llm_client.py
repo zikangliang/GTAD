@@ -13,7 +13,7 @@ class LLMAnalyzer:
         
         # 2. Try Google Gemini Config
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
-        self.gemini_model_name = os.getenv("LLM_MODEL", "gemini-pro")
+        self.gemini_model_name = os.getenv("LLM_MODEL", "models/gemini-2.5-flash")
 
         self.client_type = None
 
